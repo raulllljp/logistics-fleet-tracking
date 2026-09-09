@@ -1,5 +1,5 @@
 import * as authApi from '../api/authApi.js'
-import { getErrorMessage } from '../api/client.js'
+import { authError } from '../utils/authForms.js'
 import { basicUser, getToken, setToken, setStoredUser, clearAuthStorage, subscribeAuthChanges } from '../utils/storage.js'
 
 // A small session controller keeps request races testable without rendering React.
@@ -29,12 +29,13 @@ export const createAuthSession = (api = authApi) => {
       if (revision !== current) return
       if (error.response?.status === 401) { logout(); return }
       // A temporary network/500 error is not proof that the token is invalid.
-      publish({ user: null, isAuthenticated: false, isLoading: false, error: getErrorMessage(error) })
+      publish({ user: null, isAuthenticated: false, isLoading: false, error: authError(error).message })
     }
   }
   const authenticate = async (action, payload) => {
     const current = invalidate()
-    publish({ isLoading: true, error: null })
+    // Keep forms mounted during submission; isLoading is for session restoration.
+    publish({ error: null })
     try {
       const response = await api[action](payload)
       if (revision !== current) return null
@@ -44,7 +45,7 @@ export const createAuthSession = (api = authApi) => {
       publish({ user, token: response.data.token, isAuthenticated: true, isLoading: false })
       return user
     } catch (error) {
-      if (revision === current) publish({ isLoading: false, error: getErrorMessage(error) })
+      if (revision === current) publish({ isLoading: false, error: authError(error).message })
       throw error
     }
   }

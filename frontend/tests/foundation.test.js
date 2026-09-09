@@ -502,7 +502,7 @@ test('startup trusts /me rather than cached role; temporary failure is retryable
   await unavailable.refreshCurrentUser()
   assert.equal(storage.getToken(), 'unit-token')
   assert.equal(unavailable.getSnapshot().isAuthenticated, false)
-  assert.equal(unavailable.getSnapshot().error, 'Offline')
+  assert.equal(unavailable.getSnapshot().error, 'We could not complete your request. Please try again.')
   const expired = createAuthSession({ getMe: async () => { throw { response: { status: 401 } } } })
   await expired.refreshCurrentUser()
   assert.equal(storage.getToken(), null)

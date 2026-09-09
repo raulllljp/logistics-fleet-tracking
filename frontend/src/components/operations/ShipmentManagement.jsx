@@ -1,0 +1,30 @@
+﻿import {useState} from 'react'
+import {useOperations} from '../../hooks/useOperations'
+import {shipments,dispatchPayload,operationRefreshScopes} from '../../utils/operations'
+import {SHIPMENT_STATUSES} from '../../utils/constants'
+import {formatStatus,formatCurrency,formatDateTime} from '../../utils/formatters'
+import {RouteVisual,ShipmentTimeline,DeliveryProofCard} from '../common/ShipmentComponents'
+import Button from '../ui/Button'
+import Field from '../ui/Field'
+import StatusBadge from '../ui/StatusBadge'
+import {Modal,ActionForm,SelectField,LoadState,OperationsHeader,DataTable} from './OperationsUI'
+export function CapacityNotice({weight,capacity}) {return <p className={weight>capacity?'field-error':'role-note'}>Shipment weight: {weight} kg. Vehicle capacity: {capacity} kg. {weight>capacity?'This shipment exceeds vehicle capacity.':'Remaining capacity is checked by the server across all active shipments.'}</p>}
+export function DispatchPanel({shipment,onClose,onAssigned}) {
+ const state=useOperations('available');const [driverId,setDriver]=useState('');const [done,setDone]=useState(false)
+ const driver=state.data?.drivers?.find(d=>d._id===driverId)
+ return <Modal title="Assign shipment" onClose={onClose}><RouteVisual pickup={shipment.pickupAddress} destination={shipment.dropAddress}/><StatusBadge status={shipment.status}/>{done?<p role="status">Shipment assigned successfully.</p>:<LoadState state={state}><ActionForm canSubmit={Boolean(driver?.vehicleId)&&shipment.weight<=driver.vehicleId.capacity} label="Assign shipment" refreshScopes={operationRefreshScopes.dispatch} onDone={()=>{setDone(true);onAssigned?.();onClose()}} submit={()=>{if(!driver?.vehicleId||shipment.weight>driver.vehicleId.capacity)throw new Error('Select compatible pair');return shipments.assignShipment(shipment._id,dispatchPayload(driver))}}>{fieldErrors=><><SelectField label="Eligible driver" error={fieldErrors.driverId} required value={driverId} onChange={e=>setDriver(e.target.value)} options={ [['','Choose linked driver'],...(state.data?.drivers||[]).map(d=>[d._id,(d.userId?.name||'Driver')+' · '+d.licenseNumber+' · '+d.vehicleId?.registrationNumber])]}/>{driver&&<><SelectField label="Linked vehicle" error={fieldErrors.vehicleId} value={driver.vehicleId._id} disabled options={[[driver.vehicleId._id,driver.vehicleId.registrationNumber]]}/><CapacityNotice weight={shipment.weight} capacity={driver.vehicleId.capacity}/></>}{!state.data?.drivers?.length&&<p>No eligible linked drivers. Create or link resources in Drivers and Vehicles.</p>}</>}</ActionForm></LoadState>}</Modal>
+}
+function ShipmentInspection({shipment,onClose}) {
+ const history=useOperations('history',{id:shipment._id});const driverList=useOperations('drivers');const vehicleList=useOperations('vehicles')
+ const driver=driverList.data?.drivers.find(d=>d._id===shipment.assignedDriverId);const vehicle=vehicleList.data?.vehicles.find(v=>v._id===shipment.assignedVehicleId)
+ return <Modal title={'Shipment #'+shipment._id.slice(-6)} onClose={onClose}><StatusBadge status={shipment.status}/><p>{shipment.customerId?.name||'Customer unavailable'}</p><RouteVisual pickup={shipment.pickupAddress} destination={shipment.dropAddress}/><dl className="shipment-facts"><div><dt>Weight / distance</dt><dd>{shipment.weight} kg / {shipment.distance} km</dd></div><div><dt>Estimate</dt><dd>{formatCurrency(shipment.estimatedCost)}</dd></div><div><dt>Driver</dt><dd>{driver?.userId?.name||(shipment.assignedDriverId?'Assigned; name unavailable':'Not assigned')}</dd></div><div><dt>Vehicle</dt><dd>{vehicle?.registrationNumber||(shipment.assignedVehicleId?'Assigned; registration unavailable':'Not assigned')}</dd></div></dl><LoadState state={history}>{history.data&&<ShipmentTimeline history={history.data.history} status={history.data.currentStatus}/>}</LoadState>{shipment.status==='DELIVERED'&&<DeliveryProofCard proof={shipment.deliveryProof}/>}</Modal>
+}
+export function ShipmentsManager({pendingOnly=false}) {
+ const [status,setStatus]=useState(pendingOnly?'BOOKED':'');const [search,setSearch]=useState('');const [dispatch,setDispatch]=useState(null);const [inspect,setInspect]=useState(null);const [notice,setNotice]=useState('')
+ const state=useOperations('shipments',status?{status}:{})
+ let rows=(state.data?.shipments||[]).filter(s=>[s._id,s.pickupAddress,s.dropAddress,s.customerId?.name].some(value=>value?.toLowerCase().includes(search.toLowerCase())))
+ if(pendingOnly)rows=rows.slice(0,5)
+ return <section className="page-stack">{pendingOnly?<h2>Pending dispatch</h2>:<OperationsHeader title="Shipments" state={state}/>} {!pendingOnly&&<div className="operations-filters"><SelectField label="Shipment status" value={status} onChange={e=>setStatus(e.target.value)} options={ [['','All'],...SHIPMENT_STATUSES.map(v=>[v,formatStatus(v)])]}/><Field label="Search loaded shipments" value={search} onChange={e=>setSearch(e.target.value)}/></div>}{notice&&<p role="status" className="booking-success">{notice}</p>}<LoadState state={state}><DataTable rows={rows} empty="No shipments awaiting this view" columns={[
+ ['Shipment',s=>s._id.slice(-6).toUpperCase()],['Customer',s=>s.customerId?.name||'Unavailable'],['Route',s=><>{s.pickupAddress}<span className="vehicle-type">→ {s.dropAddress}</span></>],['Weight / cost',s=><>{s.weight} kg<small className="vehicle-type">{formatCurrency(s.estimatedCost)}</small></>],['Status',s=><StatusBadge status={s.status}/>],['Assignments',s=><>{s.assignedDriverId?'Driver assigned':'No driver'}<small className="vehicle-type">{s.assignedVehicleId?'Vehicle assigned':'No vehicle'}</small></>],['Booked',s=>formatDateTime(s.bookedAt)],['Actions',s=><div className="customer-actions"><Button variant="quiet" onClick={()=>setInspect(s)}>Details</Button>{s.status==='BOOKED'&&<Button onClick={()=>setDispatch(s)}>Assign shipment</Button>}</div>]
+ ]}/></LoadState>{dispatch&&<DispatchPanel shipment={dispatch} onClose={()=>{setDispatch(null)}} onAssigned={()=>setNotice('Shipment assigned successfully.')}/>}{inspect&&<ShipmentInspection shipment={inspect} onClose={()=>setInspect(null)}/>}</section>
+}
