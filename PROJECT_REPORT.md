@@ -18,17 +18,16 @@
 
 | S.No | Student Name | Roll No. | Department | Section |
 | :---: | :--- | :--- | :--- | :---: |
-| **1** | [Student Name 1] | [Roll No. 1] | Computer Science | Section A |
-| **2** | [Student Name 2] | [Roll No. 2] | Computer Science | Section A |
-| **3** | [Student Name 3] | [Roll No. 3] | Computer Science | Section A |
-| **4** | [Student Name 4 - Optional] | [Roll No. 4] | Computer Science | Section A |
+| **1** | Rahul J Prakash | 2462133 | ADSE | 5 BTCSAIML A |
+| **2** | Reyan V Rinoj | 2462136 | ADSE | 5 BTCSAIML A |
+| **3** | San Maria Joby | 2462142 | ADSE | 5 BTCSAIML A |
+| **4** | Sabharimanivel B | 246218 | ADSE | 5 BTCSAIML A |
 
 ---
 
 ### Mandatory GitHub Repository Link
 > 🔗 **GitHub Repository:** [https://github.com/raulllljp/logistics-fleet-tracking](https://github.com/raulllljp/logistics-fleet-tracking)
-> 
-> *Note: The repository contains the complete Node.js/Express.js backend, Vite/React frontend, Postman workspace collections, and automated test suites.*
+
 
 ---
 
@@ -288,7 +287,7 @@ The backend exposes 37 frozen RESTful API endpoints categorized by operational s
 
 ---
 
-# 7. System Demonstration & Screenshot Gallery
+# 7. System Demonstration
 
 This section illustrates the working user interfaces and API endpoints of the **Fleetline Logistics System**. 
 
@@ -446,19 +445,3 @@ The project was designed, implemented, tested, and deployed over a 12-day develo
 - Gained deep practical expertise in Mongoose schema design, document relationships using `ObjectId` references, and document aggregation pipelines.
 - Implemented robust security practices including salt-rounded password hashing, secret key isolation, and git repository hygiene.
 - Developed comprehensive automated testing pipelines using Node.js native test runner and Vitest.
-
----
-
-# 10. Submission Checklist Verification
-
-- [x] **Mandatory Team Details Page:** Complete with Name, Roll No., Department, Section, Course, and Project details on Page 1.
-- [x] **GitHub Repository Link:** Clearly displayed directly below the Team Details table (`https://github.com/raulllljp/logistics-fleet-tracking`).
-- [x] **Core Technology Compliance:** Node.js, Express.js, MongoDB (Mongoose), JWT, Bcrypt, and Express validation middleware utilized.
-- [x] **Implemented Modules:** 14 working modules implemented and verified via automated tests and Postman.
-- [x] **Error Handling & Input Validation:** Centralized error middleware and validation pipeline active across all endpoints.
-- [x] **Security & Environment Hygiene:** Secrets stored in `.env`, `.env` added to `.gitignore`, safe `.env.example` committed.
-- [x] **Screenshots & Demonstration:** 12 full-color application screenshots embedded alongside Postman execution placeholder containers.
-- [x] **Document Length & Formatting:** Comprehensive academic format meeting and exceeding the 7-page report requirement.
-
----
-*End of Report — Logistics & Fleet Delivery Tracking System (Fleetline)*
