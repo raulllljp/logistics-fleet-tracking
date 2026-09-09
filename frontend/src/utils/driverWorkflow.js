@@ -1,5 +1,11 @@
 export const nextActions = status => ({ ASSIGNED: ['PICKED_UP'], PICKED_UP: ['IN_TRANSIT'], IN_TRANSIT: ['DELIVERED', 'FAILED'] })[status] || []
 export const actionLabels = { PICKED_UP: 'Mark picked up', IN_TRANSIT: 'Start transit', DELIVERED: 'Mark delivered', FAILED: 'Mark failed' }
+export const actionSuccessMessages = {
+  PICKED_UP: 'Shipment marked as picked up.',
+  IN_TRANSIT: 'Shipment is now in transit.',
+  DELIVERED: 'Delivery completed.',
+  FAILED: 'Shipment marked as failed.',
+}
 export function statusPayload(status, values) {
   const payload = { status }
   for (const key of ['location', 'note', ...(status === 'DELIVERED' ? ['receiverName', 'deliveryNotes'] : [])]) {

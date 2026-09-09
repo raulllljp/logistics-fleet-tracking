@@ -2,18 +2,49 @@ import { useEffect, useState } from 'react'
 import { getMyShipments, trackShipment } from '../api/shipmentApi'
 import { shipmentError, shipmentFilter } from '../utils/customerShipments'
 
-// Each request owns its result; changing a filter/id invalidates older responses.
+// Preserves existing data during background refreshes to prevent UI flashing
 export function useCustomerShipments({ id, status = '' } = {}) {
   const [attempt, setAttempt] = useState(0)
-  const key = `${id || 'list'}:${status}:${attempt}`
-  const [state, setState] = useState({ key: null, data: null, error: null })
+  const query = `${id || 'list'}:${status}`
+  const key = `${query}:${attempt}`
+  const [state, setState] = useState({ key: null, query: null, data: null, error: null })
+
   useEffect(() => {
     const controller = new AbortController()
-    const request = id ? trackShipment(id, { signal: controller.signal }) : getMyShipments(shipmentFilter(status), { signal: controller.signal })
-    request.then(response => { if (!controller.signal.aborted) setState({ key, data: response.data, error: null }) })
-      .catch(error => { if (!controller.signal.aborted) setState({ key, data: null, error: shipmentError(error) }) })
+    const request = id
+      ? trackShipment(id, { signal: controller.signal })
+      : getMyShipments(shipmentFilter(status), { signal: controller.signal })
+
+    request
+      .then(response => {
+        if (!controller.signal.aborted) {
+          setState({ key, query, data: response.data, error: null })
+        }
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) {
+          setState(prev => ({
+            key,
+            query,
+            data: prev.query === query ? prev.data : null,
+            error: shipmentError(error),
+          }))
+        }
+      })
+
     return () => controller.abort()
-  }, [id, status, key])
-  return { data: state.key === key ? state.data : null, error: state.key === key ? state.error : null,
-    loading: state.key !== key, refresh: () => setAttempt(value => value + 1) }
+  }, [id, status, key, query])
+
+  const isCurrentQuery = state.query === query
+  const isFresh = state.key === key
+  const activeData = isCurrentQuery ? state.data : null
+  const activeError = isCurrentQuery && isFresh ? state.error : null
+
+  return {
+    data: activeData,
+    error: activeError,
+    loading: !activeData && !isFresh,
+    refreshing: Boolean(activeData) && !isFresh,
+    refresh: () => setAttempt(value => value + 1),
+  }
 }

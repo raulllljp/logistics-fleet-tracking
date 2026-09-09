@@ -5,8 +5,12 @@ const tones = {
   maintenance: 'warning', inactive: 'neutral', planned: 'neutral', active: 'info',
   completed: 'success', cancelled: 'danger',
 }
-export default function StatusBadge({ status }) {
-  return <span className={'status-badge badge-' + (tones[status] || 'neutral')}>
-    <span className="status-dot" aria-hidden="true" />{formatStatus(status)}
-  </span>
+export default function StatusBadge({ status, className = '' }) {
+  const tone = tones[status] || 'neutral'
+  return (
+    <span className={`status-badge badge-${tone} ${className}`.trim()}>
+      <span className="status-dot" aria-hidden="true" />
+      <span>{formatStatus(status)}</span>
+    </span>
+  )
 }

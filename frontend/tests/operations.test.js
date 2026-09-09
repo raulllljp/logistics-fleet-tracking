@@ -70,6 +70,12 @@ test('operations errors expose safe conflict feedback for required codes', () =>
     VEHICLE_ASSIGNED: 'Active shipment work prevents this change.',
     SHIPMENT_ALREADY_IN_TRIP: 'A selected shipment already belongs to a planned or active trip.',
     TRIP_HAS_ACTIVE_SHIPMENTS: 'This trip cannot be completed until all shipments are delivered or failed.',
+    SHIPMENT_NOT_BOOKABLE: 'Only booked shipments can be dispatched.',
+    SHIPMENT_ALREADY_ASSIGNED: 'This shipment has already been assigned. Refresh the list.',
+    DRIVER_UNAVAILABLE: 'This driver is unavailable for more work.',
+    VEHICLE_UNAVAILABLE: 'This vehicle is unavailable. Check its linkage and active work.',
+    VEHICLE_MAINTENANCE: 'This vehicle is in maintenance.',
+    VEHICLE_INACTIVE: 'This vehicle is inactive.',
   }
   for (const [errorCode, message] of Object.entries(expected)) assert.equal(operationsError({ response: { data: { errorCode } } }), message)
 })
@@ -84,3 +90,76 @@ test('successful mutations publish only the requested operation refresh scopes',
   assert.deepEqual(received, [operationRefreshScopes.dispatch, operationRefreshScopes.trip])
   global.window = previousWindow
 })
+
+test('capacity notice displays remaining nominal capacity and error when exceeded', async () => {
+  const { createServer } = await import('vite')
+  const { createElement } = await import('react')
+  const { renderToString } = await import('react-dom/server')
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' })
+  try {
+    const { CapacityNotice } = await vite.ssrLoadModule('/src/components/operations/ShipmentManagement.jsx')
+    const sufficient = renderToString(createElement(CapacityNotice, { weight: 400, capacity: 1000 }))
+    assert.match(sufficient, /capacity-box-sufficient/)
+    assert.match(sufficient, /600 kg/)
+    assert.match(sufficient, /sufficient/i)
+
+    const exceeded = renderToString(createElement(CapacityNotice, { weight: 1200, capacity: 1000 }))
+    assert.match(exceeded, /capacity-box-insufficient/)
+    assert.match(exceeded, /Exceeded/)
+    assert.match(exceeded, /exceeds/i)
+  } finally { await vite.close() }
+})
+
+test('reporting charts render empty states without NaN and display SLA disclosure', async () => {
+  const { createServer } = await import('vite')
+  const { createElement } = await import('react')
+  const { renderToString } = await import('react-dom/server')
+  const vite = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' })
+  try {
+    const { default: DeliveryPerformanceChart } = await vite.ssrLoadModule('/src/components/charts/DeliveryPerformanceChart.jsx')
+    const { default: FleetUtilizationChart } = await vite.ssrLoadModule('/src/components/charts/FleetUtilizationChart.jsx')
+    const { default: ShipmentStatusChart } = await vite.ssrLoadModule('/src/components/charts/ShipmentStatusChart.jsx')
+    const { default: DriverWorkloadChart } = await vite.ssrLoadModule('/src/components/charts/DriverWorkloadChart.jsx')
+    const { default: TripSummaryChart } = await vite.ssrLoadModule('/src/components/charts/TripSummaryChart.jsx')
+
+    // Empty states
+    const emptyDelivery = renderToString(createElement(DeliveryPerformanceChart, { data: {} }))
+    assert.match(emptyDelivery, /No completed deliveries/)
+    assert.doesNotMatch(emptyDelivery, /NaN/)
+
+    const emptyFleet = renderToString(createElement(FleetUtilizationChart, { data: {} }))
+    assert.match(emptyFleet, /No fleet vehicles/)
+    assert.doesNotMatch(emptyFleet, /NaN/)
+
+    const emptyStatus = renderToString(createElement(ShipmentStatusChart, { data: {} }))
+    assert.match(emptyStatus, /No shipment records/)
+    assert.doesNotMatch(emptyStatus, /NaN/)
+
+    const emptyWorkload = renderToString(createElement(DriverWorkloadChart, { data: {} }))
+    assert.match(emptyWorkload, /No driver profiles/)
+    assert.doesNotMatch(emptyWorkload, /NaN/)
+
+    const emptyTrip = renderToString(createElement(TripSummaryChart, { data: {} }))
+    assert.match(emptyTrip, /No trips recorded/)
+    assert.doesNotMatch(emptyTrip, /NaN/)
+
+    // Populated state with SLA copy disclosure
+    const populatedDelivery = renderToString(createElement(DeliveryPerformanceChart, {
+      data: {
+        totalCompletedAttempts: 10,
+        deliveredShipments: 9,
+        failedShipments: 1,
+        onTimeDelivered: 8,
+        averageDeliveryDurationHours: 14.5,
+        deliverySuccessPercentage: 90,
+        onTimeDeliveryPercentage: 88.9,
+        deliverySlaHours: 48,
+      },
+    }))
+    assert.match(populatedDelivery, /48-hour academic SLA/)
+    assert.match(populatedDelivery, /90.*Success/)
+    assert.match(populatedDelivery, /88\.9/)
+    assert.match(populatedDelivery, /14\.5/)
+  } finally { await vite.close() }
+})
+
