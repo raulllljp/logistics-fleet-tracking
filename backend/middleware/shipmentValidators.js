@@ -6,8 +6,14 @@ const fields = allowed => body().custom(value => value && typeof value === "obje
   && Object.keys(value).every(key => allowed.includes(key)))
   .withMessage(`Only these fields are accepted: ${allowed.join(", ")}`);
 const pricingFields = () => [
-  body("weight").custom(value => Number.isFinite(value) && value > 0).withMessage("Weight must be a number greater than zero"),
-  body("distance").custom(value => Number.isFinite(value) && value >= 0).withMessage("Distance must be a nonnegative number"),
+  body("weight").custom(value => {
+    const num = Number(value);
+    return value !== null && value !== "" && Number.isFinite(num) && num > 0;
+  }).withMessage("Weight must be a number greater than zero"),
+  body("distance").custom(value => {
+    const num = Number(value);
+    return value !== null && value !== "" && Number.isFinite(num) && num >= 0;
+  }).withMessage("Distance must be a nonnegative number"),
 ];
 const createShipmentValidators = [
   fields(["pickupAddress", "dropAddress", "weight", "distance"]),

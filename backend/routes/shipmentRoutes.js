@@ -22,7 +22,13 @@ router.get("/driver/my", authorizeRoles(USER_ROLES.DRIVER), driverShipmentValida
 router.put("/:id/status", authorizeRoles(USER_ROLES.DRIVER), validateShipmentId, statusUpdateValidators, validateRequest, updateShipmentStatusController);
 router.get("/:id/history", authorizeRoles(...Object.values(USER_ROLES)), validateShipmentId, getShipmentHistory);
 router.get("/:id/track", authorizeRoles(USER_ROLES.CUSTOMER), validateShipmentId, trackShipment);
+router.get("/track/:id", authorizeRoles(USER_ROLES.CUSTOMER), validateShipmentId, trackShipment);
 router.get("/:id/proof", authorizeRoles(...Object.values(USER_ROLES)), validateShipmentId, getDeliveryProof);
+router.get("/:id/pod", authorizeRoles(...Object.values(USER_ROLES)), validateShipmentId, getDeliveryProof);
+router.post("/:id/pod", authorizeRoles(USER_ROLES.DRIVER), validateShipmentId, (req, res, next) => {
+  req.body.status = "DELIVERED";
+  next();
+}, statusUpdateValidators, validateRequest, updateShipmentStatusController);
 router.get("/:id", authorizeRoles(USER_ROLES.CUSTOMER, USER_ROLES.DISPATCHER, USER_ROLES.ADMIN), validateShipmentId, getShipmentById);
 
 module.exports = router;

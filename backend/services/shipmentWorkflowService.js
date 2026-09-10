@@ -8,7 +8,7 @@ const { ACTIVE_SHIPMENT_STATUSES } = require("../utils/constants");
 const TRANSITIONS = {
   BOOKED: ["ASSIGNED"],
   ASSIGNED: ["PICKED_UP"],
-  PICKED_UP: ["IN_TRANSIT"],
+  PICKED_UP: ["IN_TRANSIT", "DELIVERED"],
   IN_TRANSIT: ["DELIVERED", "FAILED"],
   DELIVERED: [],
   FAILED: [],

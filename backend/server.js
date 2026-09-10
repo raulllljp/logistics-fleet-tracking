@@ -17,6 +17,20 @@ const app = express();
 // Middleware
 app.use(cors(corsOptions()));
 app.use(express.json());
+app.use((req, res, next) => {
+  req.url = req.url.replace(/(%0A|%0D|%20|\r|\n|\s)+$/gi, "").trim();
+  next();
+});
+
+// Root route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Logistics Fleet Tracking Backend API is active.",
+    healthCheck: "http://localhost:5000/api/health",
+    frontendUrl: "http://localhost:5173",
+  });
+});
 
 // Health check route
 app.get("/api/health", (req, res) => {
@@ -31,6 +45,7 @@ app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/drivers", driverRoutes);
 app.use("/api/shipments", shipmentRoutes);
 app.use("/api/trips", tripRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/admin/reports", reportRoutes);
 
 app.use(notFound);
@@ -42,7 +57,9 @@ const startServer = async () => {
   await connectDB();
 
   const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${server.address().port}`);
+    const addr = server.address();
+    const port = addr && typeof addr === "object" ? addr.port : PORT;
+    console.log(`Server running on port ${port}`);
   });
 
   server.on("error", (error) => {
