@@ -1,6 +1,6 @@
 # P08 — Logistics & Fleet Delivery Tracking System (Fleetline)
 
-A full-stack logistics and fleet delivery tracking platform with end-to-end multi-role workflows for **Customers**, **Drivers**, **Dispatchers**, and **Admins**.
+A full stack logistics and fleet delivery tracking platform with end to-end multi-role workflows for **Customers**, **Drivers**, **Dispatchers**, and **Admins**.
 
 ---
 
